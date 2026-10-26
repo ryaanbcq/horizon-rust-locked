@@ -4,6 +4,7 @@
 //! rolloff 1), looping, relative flag and source state, Ogg/Vorbis decoding
 //! (streams on a worker thread) and OpenAL Soft's stereo panning.
 use crate::Result;
+use crate::audio_fx::{self, AudioFx};
 use crate::sound_engine::{
     Attenuation, Backend, Bound, ChannelId, InstanceId, PlayResult, SoundEngine, SoundInstance,
     Sounds, TickContext,
@@ -47,6 +48,17 @@ struct Mixer {
     listener_yaw: f32,
     listener_pitch: f32,
     limiter_peak: f32,
+    /// A mod's effects on the whole output (`set-audio-fx`).
+    fx: AudioFx,
+    /// Test taps (`HORIZON_AUDIO_DUMP`, `_DUMP_DRY`): raw little-endian f32, interleaved, before and
+    /// after the effects; opened on the first buffer.
+    taps: Option<Taps>,
+    taps_tried: bool,
+}
+#[derive(Default)]
+struct Taps {
+    wet: Option<std::io::BufWriter<fs::File>>,
+    dry: Option<std::io::BufWriter<fs::File>>,
 }
 /// A sound the player could have heard (`SoundEventListener.onPlaySound`):
 /// what the subtitle overlay needs.
@@ -372,8 +384,33 @@ fn distance_gain(linear: Option<f32>, distance: f32) -> f32 {
 }
 // Only the output stream mixes; a build without one (no `audio` feature) never does.
 #[cfg_attr(not(feature = "audio"), allow(dead_code))]
+impl Mixer {
+    /// The test taps (`HORIZON_AUDIO_DUMP` after the effects, `HORIZON_AUDIO_DUMP_DRY` before).
+    fn write_tap(&mut self, data: &[f32], wet: bool) {
+        use std::io::Write;
+        if !self.taps_tried {
+            self.taps_tried = true;
+            let open = |var: &str| {
+                std::env::var_os(var).and_then(|p| fs::File::create(p).ok()).map(std::io::BufWriter::new)
+            };
+            let taps = Taps { wet: open("HORIZON_AUDIO_DUMP"), dry: open("HORIZON_AUDIO_DUMP_DRY") };
+            if taps.wet.is_some() || taps.dry.is_some() {
+                self.taps = Some(taps);
+            }
+        }
+        if let Some(taps) = &mut self.taps
+            && let Some(w) = if wet { taps.wet.as_mut() } else { taps.dry.as_mut() }
+        {
+            for s in data {
+                let _ = w.write_all(&s.to_le_bytes());
+            }
+        }
+    }
+}
 fn mix(mixer: &mut Mixer, data: &mut [f32], channels: usize, rate: u32) {
     data.fill(0.0);
+    let fx_before = mixer.fx.applied();
+    let fx_pitch = mixer.fx.begin(data.len() / channels.max(1), rate);
     let listener = mixer.listener;
     // The camera's forward and up vectors (`Camera.forwardVector`/`upVector`)
     // and OpenAL's right = forward x up.
@@ -424,7 +461,7 @@ fn mix(mixer: &mut Mixer, data: &mut [f32], channels: usize, rate: u32) {
             stereo_gains(dot(d, right), dot(d, up), dot(d, forward))
         }
         .map(|pan| gain * pan);
-        let step = f64::from(*source_rate) / f64::from(rate) * f64::from(c.pitch.max(0.0));
+        let step = f64::from(*source_rate) / f64::from(rate) * f64::from(c.pitch.max(0.0)) * f64::from(fx_pitch);
         voices.push((*id, [left, right, gain], step));
     }
     for (id, [left, right, gain], step) in voices {
@@ -457,6 +494,9 @@ fn mix(mixer: &mut Mixer, data: &mut [f32], channels: usize, rate: u32) {
             c.position += step;
         }
     }
+    mixer.write_tap(data, false);
+    mixer.fx.process(data, channels, rate, &fx_before);
+    mixer.write_tap(data, true);
     // Limit the whole buffer together, preserving waveform and stereo balance
     // instead of flattening each overloaded sample; release over 200 ms
     // (OpenAL Soft's output limiter, `ALC_OUTPUT_LIMITER_SOFT`, releases
@@ -522,12 +562,17 @@ fn build_stream<T: cpal::SizedSample + cpal::FromSample<f32>>(
     let rate = config.sample_rate().0;
     let channels = config.channels() as usize;
     let mut scratch = Vec::new();
+    // tests: the taps get the sound, the speakers do not
+    let mute = std::env::var_os("HORIZON_AUDIO_MUTE").is_some();
     let stream = device.build_output_stream(
         &config.config(),
         move |data: &mut [T], _| {
             scratch.resize(data.len(), 0.0f32);
             if let Ok(mut m) = mixer.lock() {
                 mix(&mut m, &mut scratch, channels, rate);
+                if mute {
+                    scratch.fill(0.0);
+                }
             } else {
                 scratch.fill(0.0);
             }
@@ -654,6 +699,16 @@ impl Audio {
             m.listener_yaw = yaw;
             m.listener_pitch = pitch;
         }
+    }
+    /// A mod's effects on the whole output (`None`: the plain sound, reached fast).
+    pub fn set_fx(&mut self, params: Option<&[f32; audio_fx::PARAMS]>) {
+        if let Ok(mut m) = self.backend.mixer.lock() {
+            m.fx.set_target(params);
+        }
+    }
+    /// What the effects are at now (smoothed), for the status.
+    pub fn fx_applied(&self) -> [f32; audio_fx::PARAMS] {
+        self.backend.mixer.lock().map_or(audio_fx::NEUTRAL, |m| m.fx.applied())
     }
     /// Sync the volume options, refreshing the categories that changed
     /// (the option sliders' `refreshCategoryVolume`).
@@ -803,6 +858,13 @@ impl Audio {
             .lock()
             .map_or(0, |m| m.channels.len())
             .into();
+        let fx = self.fx_applied();
+        census["fx"] = serde_json::json!({
+            "active": fx != audio_fx::NEUTRAL,
+            "pitch": fx[0], "wow": fx[1], "flutter": fx[2], "lowpass_hz": fx[3],
+            "echo": fx[4], "echo_s": fx[5], "reverb": fx[6],
+            "tremolo": fx[7], "tremolo_hz": fx[8], "gain_db": fx[9], "ceiling": fx[10],
+        });
         if let Ok(cache) = self.backend.cache.lock() {
             census["decoded"] = cache.entries.len().into();
             census["decoded_mib"] = (cache.bytes >> 20).into();

@@ -186,6 +186,22 @@ interface render {
     /// the view (not the player) with smooth noise, scaled by the player's
     /// Distortion Effects option.
     shake: func(strength: f32, seconds: f32);
+    /// Bends the whole game's sound (music, mobs, blocks, the mod's own
+    /// sounds), kept until changed. Twelve floats, clamped by the game:
+    /// pitch ratio (0.7-1.3), wow depth (0-0.04, 0.45 Hz) and flutter depth
+    /// (0-0.012, 6.3 Hz) on that pitch, low-pass cutoff in Hz (700-20000, 20000
+    /// off), echo wet (0-0.5) and echo time in seconds (0.08-0.65), reverb
+    /// wet (0-0.5), tremolo depth (0-0.3, never louder than the source) and
+    /// rate in Hz (0.3-2.5), master gain in dB (-9-0), limiter ceiling
+    /// (0.3-1; no sample goes above it while any effect is on), one spare.
+    /// Neutral is [1, 0, 0, 20000, 0, 0.3, 0, 0, 1, 0, 1, 0]. Every value is
+    /// approached smoothly (1.2 s) and the gain moves at most 3 dB a second,
+    /// so nothing clicks or jumps.
+    set-audio-fx: func(params: list<f32>);
+    /// Back to the plain sound, quickly (0.12 s; the gain at most 3 dB a
+    /// second, never louder than neutral). Also what happens when the mod
+    /// stops or crashes.
+    clear-audio-fx: func();
 }
 
 /// Capability `world`: the world around the player, and changes to it.

@@ -69,6 +69,8 @@ const SHAKES_PER_CALL: usize = 16;
 /// A post pass's source, and its parameters.
 const POST_SOURCE: usize = 256 << 10;
 pub const POST_PARAMS: usize = 16;
+/// Floats of `set-audio-fx`.
+pub const AUDIO_FX_PARAMS: usize = 12;
 /// How far `world.raycast` sees: through the loaded chunks, then across the distant terrain (LOD Distance).
 pub const RAYCAST_MAX: f32 = 1024.0;
 
@@ -190,6 +192,7 @@ struct State {
     /// Capability `render`.
     post_source: Option<(Arc<str>, u64)>,
     post_params: Option<[f32; POST_PARAMS]>,
+    audio_fx: Option<[f32; AUDIO_FX_PARAMS]>,
 }
 
 /// The installed mods and the engine running them. `Mods::default()` is
@@ -348,6 +351,7 @@ impl Mods {
             cursor: None,
             post_source: None,
             post_params: None,
+            audio_fx: None,
         };
         let mut store = Store::new(engine, state);
         store.limiter(|s| &mut s.limits);
@@ -573,6 +577,13 @@ impl Mods {
     /// The cursor over an open mod screen, from its centre in GUI pixels.
     pub fn set_cursor(&mut self, cursor: Option<(f32, f32)>) {
         self.cursor = cursor;
+    }
+    /// The first running mod's audio effects, if it set any (capability
+    /// `render`); `None` is the plain sound.
+    pub fn audio_fx(&self) -> Option<[f32; AUDIO_FX_PARAMS]> {
+        self.entries
+            .iter()
+            .find_map(|e| e.run.as_ref()?.store.data().audio_fx)
     }
     /// The first running mod's post-processing pass, when it has a source
     /// and parameters.
@@ -832,6 +843,16 @@ impl render::Host for State {
     fn clear_post(&mut self) {
         self.post_source = None;
         self.post_params = None;
+    }
+    fn set_audio_fx(&mut self, params: Vec<f32>) {
+        let mut p = [0.0; AUDIO_FX_PARAMS];
+        for (to, from) in p.iter_mut().zip(params) {
+            *to = if from.is_finite() { from } else { 0.0 };
+        }
+        self.audio_fx = Some(p);
+    }
+    fn clear_audio_fx(&mut self) {
+        self.audio_fx = None;
     }
     fn shake(&mut self, strength: f32, seconds: f32) {
         let shakes = self

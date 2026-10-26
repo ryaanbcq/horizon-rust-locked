@@ -113,7 +113,7 @@ impl Capability {
             Capability::Registries => "add blocks and items to your worlds",
             Capability::Input => "react to its items, its keys and clicks on its screen",
             Capability::Ui => "open a screen of its own",
-            Capability::Render => "draw effects over the world",
+            Capability::Render => "draw effects over the world and bend the game's sound",
             Capability::World => {
                 "change the world you play in as an operator would, and play sounds"
             }

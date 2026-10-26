@@ -9886,6 +9886,9 @@ impl Game<'_> {
             self.gather_dynamic_lights(camera, alpha);
         }
         let mod_post = self.mods.mods.post();
+        // a mod's effects on the game's whole sound (capability `render`); none = the plain sound
+        let fx = self.mods.mods.audio_fx();
+        self.audio.set_fx(fx.as_ref());
         let frame = Frame {
             weather: &weather,
             weather_time: horizon_client::weather::Time::new(self.world.game_time, alpha as f32),
