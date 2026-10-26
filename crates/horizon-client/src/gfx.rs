@@ -257,7 +257,7 @@ pub struct Frame<'a> {
 pub struct ModPost<'a> {
     pub source: &'a str,
     pub version: u64,
-    pub params: [f32; 16],
+    pub params: [f32; 32],
 }
 /// A shader pack's view of the game this frame (docs/shader-packs.md, `Frame`).
 #[derive(Clone, Copy, Debug, Default)]

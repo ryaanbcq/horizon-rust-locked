@@ -68,7 +68,7 @@ const SOUNDS_PER_CALL: usize = 64;
 const SHAKES_PER_CALL: usize = 16;
 /// A post pass's source, and its parameters.
 const POST_SOURCE: usize = 256 << 10;
-pub const POST_PARAMS: usize = 16;
+pub const POST_PARAMS: usize = 32;
 /// Floats of `set-audio-fx`.
 pub const AUDIO_FX_PARAMS: usize = 12;
 /// How far `world.raycast` sees: through the loaded chunks, then across the distant terrain (LOD Distance).

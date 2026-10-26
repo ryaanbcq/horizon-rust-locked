@@ -177,7 +177,7 @@ interface render {
     /// `fs_main` entry). Compiled once per distinct source; an error is
     /// logged and the pass skipped.
     set-post: func(wgsl: string);
-    /// Sixteen floats the pass reads as `frame.mod_params[0..4]`, kept until
+    /// Up to thirty-two floats (the rest zero) the pass reads as `frame.mod_params[0..8]`, kept until
     /// changed. The pass runs only while some are set.
     set-params: func(params: list<f32>);
     clear-post: func();

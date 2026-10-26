@@ -26,7 +26,7 @@ pub struct FrameUniform {
     pub view_params: [f32; 4],
     pub dimension: [f32; 4],
     /// A mod's post pass parameters (capability `render`).
-    pub mod_params: [[f32; 4]; 4],
+    pub mod_params: [[f32; 4]; 8],
 }
 
 struct Pass {
@@ -337,13 +337,13 @@ mod tests {
     #[test]
     fn the_frame_uniform_matches_the_prelude() {
         // 4 matrices, 12 vectors and the mods' 4, as `struct Frame` in the prelude.
-        assert_eq!(std::mem::size_of::<super::FrameUniform>(), 4 * 64 + 16 * 16);
+        assert_eq!(std::mem::size_of::<super::FrameUniform>(), 4 * 64 + 16 * 20);
         let prelude = crate::shader_pack::PRELUDE;
         let body = prelude.split("struct Frame {").nth(1).unwrap();
         let body = &body[..body.find('}').unwrap()];
         assert_eq!(body.matches("mat4x4<f32>").count(), 4);
         assert_eq!(body.matches(": vec4<f32>,").count(), 12);
-        assert!(body.contains("mod_params: array<vec4<f32>, 4>,"));
+        assert!(body.contains("mod_params: array<vec4<f32>, 8>,"));
     }
     #[test]
     fn only_declared_overrides_are_passed() {
