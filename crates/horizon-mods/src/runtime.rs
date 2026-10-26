@@ -91,6 +91,8 @@ const COLUMNS_KEPT: usize = 16;
 /// longest name looked up.
 pub const ATLAS_NAMES: usize = 4096;
 const ATLAS_NAME_CHARS: usize = 256;
+/// Floats of `set-audio-fx`.
+pub const AUDIO_FX_PARAMS: usize = 12;
 /// How far `world.raycast` sees: through the loaded chunks, then across the distant terrain (LOD Distance).
 pub const RAYCAST_MAX: f32 = 1024.0;
 /// The fastest flying speed `world.set-flying-speed` gives (vanilla's is 0.05).
@@ -315,6 +317,7 @@ struct State {
     fuel_call: u64,
     #[cfg(feature = "fuel-trace")]
     fuel_now: u64,
+    audio_fx: Option<[f32; AUDIO_FX_PARAMS]>,
 }
 
 /// The installed mods and the engine running them. `Mods::default()` is
@@ -494,6 +497,7 @@ impl Mods {
             fuel_call: FUEL_INIT,
             #[cfg(feature = "fuel-trace")]
             fuel_now: FUEL_INIT,
+            audio_fx: None,
         };
         let mut store = Store::new(engine, state);
         store.limiter(|s| &mut s.limits);
@@ -829,6 +833,13 @@ impl Mods {
     /// The cursor over an open mod screen, from its centre in GUI pixels.
     pub fn set_cursor(&mut self, cursor: Option<(f32, f32)>) {
         self.cursor = cursor;
+    }
+    /// The first running mod's audio effects, if it set any (capability
+    /// `render`); `None` is the plain sound.
+    pub fn audio_fx(&self) -> Option<[f32; AUDIO_FX_PARAMS]> {
+        self.entries
+            .iter()
+            .find_map(|e| e.run.as_ref()?.store.data().audio_fx)
     }
     /// The first running mod's post-processing pass, when it has a source
     /// and parameters.
@@ -1221,6 +1232,16 @@ impl render::Host for State {
         }
         let version = self.post_data.as_ref().map_or(1, |(_, v)| v + 1);
         self.post_data = Some((Arc::from(words), version));
+    }
+    fn set_audio_fx(&mut self, params: Vec<f32>) {
+        let mut p = [0.0; AUDIO_FX_PARAMS];
+        for (to, from) in p.iter_mut().zip(params) {
+            *to = if from.is_finite() { from } else { 0.0 };
+        }
+        self.audio_fx = Some(p);
+    }
+    fn clear_audio_fx(&mut self) {
+        self.audio_fx = None;
     }
     fn shake(&mut self, strength: f32, seconds: f32) {
         let shakes = self

@@ -10142,6 +10142,9 @@ impl Game<'_> {
         let mod_post = self.mod_post_pass();
         let world_warp = self.mod_world_warp();
         let hand_tint = self.mod_hand_tint();
+        // a mod's effects on the game's whole sound (capability `render`); none = the plain sound
+        let fx = self.mods.mods.audio_fx();
+        self.audio.set_fx(fx.as_ref());
         let frame = Frame {
             hand_tint,
             world_warp: world_warp.as_ref().map(|w| horizon_client::gfx::WorldWarp {
