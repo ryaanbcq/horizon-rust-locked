@@ -4326,15 +4326,23 @@ fn shader_pack_uniform(
 ) -> pack_stages::FrameUniform {
     let s = frame.shader;
     let sky = frame.sky.sky_color;
+    // The EYE, not the camera origin: view bobbing (and the hurt tilt) moves the eye off the camera by up to
+    // a few tenths of a block, and `projection` already carries that pose. Handing out the camera origin made
+    // `world_offset(uv, d)` a point seen from the wrong place: for a near depth (a mod or pack taking
+    // `normalize(world_offset(uv, 0.5))` as the view ray) the direction swung tens of degrees with each step
+    // while walking, and anything anchored through it (sky, floating objects) shook. So `view` is re-based on
+    // the eye (world positions are eye-relative, as the prelude documents) and `camera_position` is the eye.
+    let eye = (frame.bob * view).inverse().transform_point3(Vec3::ZERO);
+    let view = view * Mat4::from_translation(eye);
     pack_stages::FrameUniform {
         view: view.to_cols_array_2d(),
         projection: projection.to_cols_array_2d(),
         inverse_view: view.inverse().to_cols_array_2d(),
         inverse_projection: projection.inverse().to_cols_array_2d(),
         camera_position: [
-            frame.camera.x as f32,
-            frame.camera.y as f32,
-            frame.camera.z as f32,
+            (frame.camera.x + f64::from(eye.x)) as f32,
+            (frame.camera.y + f64::from(eye.y)) as f32,
+            (frame.camera.z + f64::from(eye.z)) as f32,
             0.0,
         ],
         time: [0.0, 0.0, s.day_fraction, s.partial_tick],
