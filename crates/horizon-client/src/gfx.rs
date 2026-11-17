@@ -315,7 +315,7 @@ pub use warp::WorldWarp;
 pub struct ModPost<'a> {
     pub source: &'a str,
     pub version: u64,
-    pub params: [f32; 16],
+    pub params: [f32; 32],
     /// The words it reads as `mod_data` (`render.set-data`), and a version that changes with them.
     pub data: Option<(&'a [u32], u64)>,
     /// The mod has capability `atlas`: the pass is given the block sprite arrays (gfx/mod_post.rs).

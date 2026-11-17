@@ -1138,7 +1138,7 @@ type ModWorldWarp = (std::sync::Arc<str>, u64, [f32; 16], [f64; 3], u32, f32);
 type ModPostPass = (
     std::sync::Arc<str>,
     u64,
-    [f32; 16],
+    [f32; 32],
     Option<(std::sync::Arc<[u32]>, u64)>,
     bool,
     bool,

@@ -283,7 +283,12 @@ impl Game<'_> {
     }
     /// A running mod's world warp, while it has it on.
     pub(super) fn mod_world_warp(&self) -> Option<super::ModWorldWarp> {
-        self.mods.mods.warp().map(|w| (w.source, w.version, w.params, w.anchor, w.copies, w.radius))
+        // a warp reads the first sixteen of the pass's thirty-two floats
+        self.mods.mods.warp().map(|w| {
+            let mut params = [0.0; 16];
+            params.copy_from_slice(&w.params[..16]);
+            (w.source, w.version, params, w.anchor, w.copies, w.radius)
+        })
     }
     /// Whether a running mod holds the world as it is drawn.
     pub(super) fn mod_world_hold(&self) -> bool {
