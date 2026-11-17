@@ -10143,7 +10143,7 @@ impl Game<'_> {
         let world_warp = self.mod_world_warp();
         let hand_tint = self.mod_hand_tint();
         // a mod's effects on the game's whole sound (capability `render`); none = the plain sound
-        let fx = self.mods.mods.audio_fx();
+        let fx = self.mod_audio_fx();
         self.audio.set_fx(fx.as_ref());
         let frame = Frame {
             hand_tint,

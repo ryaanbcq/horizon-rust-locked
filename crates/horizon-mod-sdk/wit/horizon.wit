@@ -295,7 +295,7 @@ interface render {
     /// also draw its costly part at half size: `fs_half` and `fs_join`
     /// beside `fs_main` (docs/mods.md, "A half-size stage").
     set-post: func(wgsl: string);
-    /// Sixteen floats the pass reads as `frame.mod_params[0..4]`, kept until
+    /// Thirty-two floats the pass reads as `frame.mod_params[0..8]`, kept until
     /// changed. The pass runs only while some are set.
     set-params: func(params: list<f32>);
     /// Stops the pass: no source, no parameters and no data until the next

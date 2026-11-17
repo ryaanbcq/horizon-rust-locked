@@ -50,8 +50,8 @@ struct Frame {
     fog_color: vec4<f32>,
     // near plane, far plane, render distance in blocks, vertical field of view in radians
     view_params: vec4<f32>,
-    // the sixteen floats the mod sets with render.set-params
-    mod_params: array<vec4<f32>, 4>,
+    // the thirty-two floats the mod sets with render.set-params
+    mod_params: array<vec4<f32>, 8>,
     // xyz: what camera_position leaves out of where the camera is (its f32 rounding, up to 1/128 of a block 65,536
     // out): for something far from the world's origin, (its position - camera_position) - camera_rest is where it is
     // from the camera to well under a millimetre, the difference taken first so it is exact

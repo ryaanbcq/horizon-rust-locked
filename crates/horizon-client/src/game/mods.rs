@@ -253,6 +253,9 @@ impl Game<'_> {
     pub(super) fn mod_hand_tint(&self) -> Option<[f32; 3]> {
         None
     }
+    pub(super) fn mod_audio_fx(&self) -> Option<[f32; 12]> {
+        None
+    }
     pub(super) fn mods_left_world(&mut self) {}
     pub(super) fn mod_use_start(&mut self) -> bool {
         false
@@ -294,6 +297,10 @@ impl Game<'_> {
     pub(super) fn mod_hand_tint(&self) -> Option<[f32; 3]> {
         self.player.as_ref()?;
         self.mods.mods.hand_tint()
+    }
+    /// A running mod's effects on the game's whole sound (`render.set-audio-fx`); none: the plain sound.
+    pub(super) fn mod_audio_fx(&self) -> Option<[f32; 12]> {
+        self.mods.mods.audio_fx()
     }
     /// The player left the world: what the mods set for it that would outlast it goes.
     pub(super) fn mods_left_world(&mut self) {

@@ -50,7 +50,7 @@ pub struct FrameUniform {
     pub sky_color: [f32; 4],
     pub fog_color: [f32; 4],
     pub view_params: [f32; 4],
-    pub mod_params: [[f32; 4]; 4],
+    pub mod_params: [[f32; 4]; 8],
     /// What `camera_position` (f32) leaves out of where the camera is: its rounding, far from the world's origin.
     pub camera_rest: [f32; 4],
     /// The previous frame's camera, for reprojecting `history_picture` (a pass with a history; else the current's).

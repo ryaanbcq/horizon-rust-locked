@@ -74,7 +74,7 @@ pub const EDIT_RUNS: usize = 1 << 20;
 pub const EDIT_PALETTE: usize = 4096;
 /// A post pass's source, and its parameters.
 const POST_SOURCE: usize = 256 << 10;
-pub const POST_PARAMS: usize = 16;
+pub const POST_PARAMS: usize = 32;
 /// `render.set-data`: the words one call may give the pass (1 MiB).
 pub const POST_DATA_WORDS: usize = 1 << 18;
 /// `world.surface-height`: the columns one query may ask about, and the answers kept for a mod that does not poll
