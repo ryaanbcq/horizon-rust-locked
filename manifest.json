@@ -1,7 +1,7 @@
 {
-  "version": "c7b14c2a",
-  "commit": "c7b14c2a4a7dbb88d633863d30a300c0db5c66a8",
+  "version": "aabbf57e",
+  "commit": "aabbf57ec076d6f5f76fb08653c1fe72e5b109a6",
   "plateformes": {
-    "darwin-aarch64": { "fichier": "horizon-macos-arm64-c7b14c2a.tar.gz", "sha256": "b9ff39e0d7d488bdde9e46ac5a770b8a18e5af5c09caa5e9e4b017c33c6632f1" }
+    "darwin-aarch64": { "fichier": "horizon-macos-arm64-aabbf57e.tar.gz", "sha256": "08fd992cd8aeb4772c124cb9240b86634f30af46de63b1f3bec164ea52cd0c7a" }
   }
 }
