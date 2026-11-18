@@ -2940,6 +2940,12 @@ impl Game<'_> {
             mob.skin = Some(skin);
         }
     }
+    /// The local player's own skin on a server, once resolved and in the atlas
+    /// (the first-person arm draws it).
+    pub(super) fn own_skin(&self) -> Option<&str> {
+        let r = self.remote.as_ref()?;
+        r.skins.get(&r.profile).map(String::as_str)
+    }
     /// Puts a downloaded skin in an atlas skin slot: a free one, else the
     /// least recently shown.
     pub(super) fn store_skin(&mut self, location: String, rgba: Vec<u8>) {

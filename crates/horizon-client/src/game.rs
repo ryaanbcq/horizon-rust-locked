@@ -8980,13 +8980,18 @@ impl Game<'_> {
                 let Some(arm) = self.res.player_arm().clone() else {
                     continue;
                 };
-                let Some(r) = self
-                    .gui
-                    .atlas
-                    .sprites
-                    .get("entity/player/wide/steve")
-                    .copied()
-                else {
+                // The signed-in player's own skin once it has arrived (a server's
+                // player list carries it), the default skin until then.
+                let own = self
+                    .own_skin()
+                    .and_then(|skin| self.gui.atlas.sprites.get(skin).copied());
+                let Some(r) = own.or_else(|| {
+                    self.gui
+                        .atlas
+                        .sprites
+                        .get("entity/player/wide/steve")
+                        .copied()
+                }) else {
                     continue;
                 };
                 // renderPlayerArm (right arm)
