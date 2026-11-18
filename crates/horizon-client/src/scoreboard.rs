@@ -61,6 +61,12 @@ pub fn tag_to_json(t: &Tag) -> Value {
         Tag::Double(v) => Value::from(f64::from_bits(*v)),
         Tag::String(s) => Value::String(s.to_string_lossy()),
         Tag::List(l) => Value::Array(l.iter().map(tag_to_json).collect()),
+        // `NbtOps` writes a list of mixed types (a component list such as
+        // `["", {"text": ...}]`) as compounds holding each element under the
+        // empty key; the element is what the list means.
+        Tag::Compound(c) if c.len() == 1 && c.iter().next().is_some_and(|(k, _)| k.to_string_lossy().is_empty()) => {
+            c.iter().next().map_or(Value::Null, |(_, v)| tag_to_json(v))
+        }
         Tag::Compound(c) => Value::Object(
             c.iter()
                 .map(|(k, v)| (k.to_string_lossy(), tag_to_json(v)))

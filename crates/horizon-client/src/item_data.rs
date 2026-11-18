@@ -297,7 +297,9 @@ fn read_text(t: &Tag) -> Option<String> {
         // A component's root `text` may be empty with the visible words in
         // `extra` (every legacy display name ViaVersion produces looks like
         // this), so flatten the whole component instead of reading one key.
-        Tag::Compound(_) => Some(crate::entity_nbt::name_text(t).plain()),
+        // A component may also be a list: its first element with the rest as
+        // siblings (the pages of the book Hypixel opens on joining are).
+        Tag::Compound(_) | Tag::List(_) => Some(crate::entity_nbt::name_text(t).plain()),
         _ => None,
     }
 }
@@ -889,6 +891,32 @@ mod tests {
             extra.and_then(|d| d.custom_name.clone()).as_deref(),
             Some("Games Right click")
         );
+    }
+
+    #[test]
+    fn book_pages_read_component_lists() {
+        // `["", {"text": "Welcome "}, "to the lobby"]` as NbtOps writes it.
+        let wrapped = |s: &str| Tag::compound([("", Tag::String(s.into()))]);
+        let page = Tag::List(vec![
+            wrapped(""),
+            Tag::compound([("text", Tag::String("Welcome ".into()))]),
+            wrapped("to the lobby"),
+        ]);
+        let book = Tag::compound([
+            ("title", Tag::compound([("raw", Tag::String("Rules".into()))])),
+            ("author", Tag::String("Hypixel".into())),
+            (
+                "pages",
+                Tag::List(vec![
+                    Tag::compound([("raw", page.clone())]),
+                    Tag::List(vec![Tag::compound([("text", Tag::String("Two".into()))])]),
+                ]),
+            ),
+        ]);
+        let components = Tag::compound([("minecraft:written_book_content", book)]);
+        let (_, extra) = decode_components(Some(&components));
+        let pages = extra.and_then(|d| d.written.clone()).map(|w| w.pages);
+        assert_eq!(pages, Some(vec!["Welcome to the lobby".to_string(), "Two".to_string()]));
     }
 
     #[test]
